@@ -17,7 +17,7 @@ projects:
               - key: OPENROUTER_STT_MODEL
                 value: openai/whisper-large-v3-turbo
               - key: OPENROUTER_LLM_MODEL
-                value: liquid/lfm-2.5-2.6b:free
+                value: openrouter/free
               - key: OPENROUTER_BASE_URL
                 value: https://openrouter.ai/api/v1
               - key: EDGE_TTS_VOICE
