@@ -17,7 +17,7 @@ IPv6 → IPv4 WebSocket boundary
     │
     ▼
 Render Voice Gateway
-STT · RAG · LLM · TTS
+OpenRouter STT/LLM · RAG · Edge TTS
 ```
 
 ## Why this architecture
@@ -53,7 +53,7 @@ FastAPI + Uvicorn
     └── POST /v1/admin/documents
 ```
 
-The WebSocket currently echoes binary frames and acknowledges text frames. This validates the transport path and is not yet production audio, RTP, STT, LLM, TTS, or RAG processing. Document and reindex state is process-local and intentionally non-persistent.
+The gateway validates the authenticated media transport and implements a bounded, turn-based pipeline: OpenRouter Whisper transcription, OpenRouter text generation, and Microsoft Edge TTS playback. Document and reindex state is process-local and intentionally non-persistent.
 
 Run locally:
 
@@ -70,7 +70,7 @@ Build: pip install -r requirements.txt
 Start: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
-The service is designed as a lightweight orchestration gateway for the Render Free instance. Local STT, LLM, embeddings, TTS, and Qdrant remain outside its resource budget and are planned as external integrations.
+The service is designed as a lightweight orchestration gateway for the Render Free instance. STT and the text LLM are externalized to OpenRouter; TTS uses the `edge-tts` Microsoft Edge integration. The gateway will add only a WAV container header around inbound 8-kHz L16 audio before transcription; it will not resample or invoke FFmpeg. Edge TTS MP3 output is sent to the bidirectional `mod_audio_stream` playback API, which handles telephony playback and resampling on the FreeSWITCH side.
 
 ## Current deployment
 
@@ -148,7 +148,9 @@ Pending external integration:
 - IPv6 SIP/RTP firewall rules restricted to approved sources
 - External IPv6 softphone registration for extension `1000`
 - External two-way `9196` echo test
-- FreeSWITCH-to-Cloudflare-to-Render WebSocket media streaming
+- Configure `OPENROUTER_API_KEY` in the Render service
+- Verify a complete provider-backed call with FreeSWITCH playback
+- Add Upstash-backed retrieval and durable call state
 
 ## Connect to the VM
 
@@ -206,6 +208,10 @@ The detailed deployment plan and local operating notes are maintained separately
 - GCP Free Tier quotas apply; outbound media traffic is not unlimited.
 - Render's public services are IPv4-oriented; Cloudflare now provides the IPv6-to-IPv4 media boundary for `voice.fxxii.com`.
 - The TLS-enabled `mod_audio_stream` module, IPv6 patch, 8-kHz mono L16 contract, and live HMAC handshake are implemented and verified from the IPv6-only VM.
+- OpenRouter transcription is request/response rather than a live STT WebSocket, so the first voice gateway implementation is turn-based. The LLM can stream text, and responses can be synthesized sentence-by-sentence.
+- OpenRouter `openai/whisper-large-v3-turbo` is usage-priced; `openai/gpt-oss-20b:free` is rate-limited. Edge TTS is a no-key online integration without a production SLA. Provider quotas, rate limits, and availability can change.
+- No FFmpeg dependency is planned. The gateway will use the FreeSWITCH module's native MP3 playback path unless testing proves another decoder is necessary.
+- The media start script sets `STREAM_PLAYBACK=true`; the FreeSWITCH VM must use the bidirectional `mod_audio_stream` build for returned `streamAudio` messages.
 
 ## License
 

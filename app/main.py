@@ -4,6 +4,8 @@ from typing import Annotated
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, status
 from pydantic import BaseModel, Field, field_validator
 
+from app.providers import configured_edge_tts, configured_openrouter
+from app.session import CallLimiter, VoicePipeline, VoiceSession
 from app.ws_auth import HMACAuthenticator
 
 
@@ -11,6 +13,8 @@ app = FastAPI(title="Voice Gateway", version="0.1.0")
 _documents: dict[str, "Document"] = {}
 _ws_authenticator: HMACAuthenticator | None = None
 _ws_authenticator_secret: str | None = None
+_call_limiter: CallLimiter | None = None
+_call_limiter_size: int | None = None
 
 
 class Document(BaseModel):
@@ -28,7 +32,38 @@ class Document(BaseModel):
 def reset_state() -> None:
     """Clear process-local state for tests and local development."""
 
+    global _call_limiter, _call_limiter_size
     _documents.clear()
+    _call_limiter = None
+    _call_limiter_size = None
+
+
+def call_limiter() -> CallLimiter:
+    global _call_limiter, _call_limiter_size
+
+    configured_size = max(1, int(os.getenv("MEDIA_MAX_CONCURRENT_CALLS", "1")))
+    if _call_limiter is None or configured_size != _call_limiter_size:
+        _call_limiter = CallLimiter(configured_size)
+        _call_limiter_size = configured_size
+    return _call_limiter
+
+
+def build_voice_pipeline() -> VoicePipeline | None:
+    api_key = os.getenv("OPENROUTER_API_KEY", "")
+    if not api_key:
+        return None
+
+    openrouter = configured_openrouter()
+    return VoicePipeline(
+        openrouter,
+        openrouter,
+        configured_edge_tts(),
+        language=os.getenv("VOICE_LANGUAGE") or None,
+        system_prompt=os.getenv(
+            "VOICE_SYSTEM_PROMPT",
+            "You are a concise telephone assistant.",
+        ),
+    )
 
 
 def ws_authenticator() -> HMACAuthenticator | None:
@@ -69,19 +104,22 @@ async def audio_socket(websocket: WebSocket, call_id: str) -> None:
         return
 
     await websocket.accept()
+    limiter = call_limiter()
+    if not limiter.try_acquire():
+        await websocket.close(code=1013, reason="voice gateway is at capacity")
+        return
 
     try:
-        while True:
-            message = await websocket.receive()
-            if message["type"] == "websocket.disconnect":
-                return
-
-            if message.get("bytes") is not None:
-                await websocket.send_bytes(message["bytes"])
-            elif message.get("text") is not None:
-                await websocket.send_json({"type": "ack", "call_id": call_id})
+        session = VoiceSession(
+            websocket,
+            call_id,
+            build_voice_pipeline(),
+        )
+        await session.run()
     except WebSocketDisconnect:
         return
+    finally:
+        limiter.release()
 
 
 @app.post("/v1/admin/documents", status_code=status.HTTP_201_CREATED)
