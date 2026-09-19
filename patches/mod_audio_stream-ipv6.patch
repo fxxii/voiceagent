@@ -1,0 +1,5 @@
+--- a/libs/libwsc/src/WebSocketContext.cpp
++++ b/libs/libwsc/src/WebSocketContext.cpp
+@@ -309 +309 @@
+-    if (bufferevent_socket_connect_hostname(_bev, dns_base, AF_INET, _cfg.host.c_str(), _cfg.port) < 0) {
++    if (bufferevent_socket_connect_hostname(_bev, dns_base, AF_INET6, _cfg.host.c_str(), _cfg.port) < 0) {

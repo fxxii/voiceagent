@@ -122,7 +122,7 @@ The default IPv4 profile files are retained as recoverable backups but disabled 
 - Broad `::/0` SIP/RTP rules are intentionally avoided.
 - Event Socket is not publicly reachable.
 - SignalWire PATs, FreeSWITCH passwords, OAuth codes, and private keys stay outside the repository.
-- Render connectivity is designed to pass through a Cloudflare proxied hostname for IPv6-to-IPv4 WebSocket compatibility.
+- Render connectivity passes through the Cloudflare-proxied `voice.fxxii.com` hostname for IPv6-to-IPv4 WebSocket compatibility.
 
 ## Verified status
 
@@ -190,7 +190,12 @@ The client exits successfully only after authenticated registration, a `9196` ca
 
 ## Documentation
 
-The detailed deployment plan and local operating notes are intentionally kept outside the public repository. This README documents the public architecture and verified test surface.
+The detailed deployment plan and local operating notes are maintained separately from this README. This README documents the public architecture and verified test surface.
+
+- [Project roadmap](docs/plan/roadmap.md)
+- [Installation guide](docs/INSTALLATION.md)
+- [Free IVRS architecture notes](doc/plan/free%20ivrs%20solutions.md)
+- [Repository operating instructions](AGENTS.md)
 
 ## Limitations
 
@@ -199,51 +204,8 @@ The detailed deployment plan and local operating notes are intentionally kept ou
 - The deployment is a single `e2-micro` VM without high availability or automatic failover.
 - The VM's 1 GiB RAM and 4 GiB swap are intended for FreeSWITCH, not local STT, LLM, embedding, or TTS workloads.
 - GCP Free Tier quotas apply; outbound media traffic is not unlimited.
-- Render's public services are IPv4-oriented, so the planned application connection requires a Cloudflare IPv6-to-IPv4 WebSocket boundary.
-- External SIP registration, the `9196` echo test, and FreeSWITCH-to-Cloudflare-to-Render media streaming remain to be validated.
-
-## Roadmap
-
-### 1. Validate the IPv6 telephony edge
-
-- [x] Build the dependency-free IPv6 SIP test client and local protocol tests.
-- [x] Run the client locally on the GCP VM: REGISTER `200`, authenticated INVITE `200`, RTP received, BYE `200`.
-- [ ] Confirm that the SIP provider supports both IPv6 signaling and IPv6 RTP.
-- [ ] Add SIP/RTP firewall rules restricted to the provider or test client IPv6 CIDRs.
-- [ ] Run `tools/sip_test_client.py` from an external IPv6-capable test host to register extension `1000`, call `9196`, and verify echoed RTP.
-
-### 2. Build the IPv6-to-IPv4 media boundary
-
-- [ ] Create a Cloudflare proxied hostname for the Render WebSocket endpoint.
-- [ ] Verify `FreeSWITCH IPv6 → Cloudflare WSS → Render IPv4` connectivity.
-- [ ] Install/configure `mod_audio_stream` for 8-kHz, mono, signed 16-bit PCM.
-- [ ] Add an HMAC-authenticated WebSocket handshake with timestamp and nonce replay protection.
-
-### 3. Implement the free turn-based voice gateway
-
-- [x] Add the deployable FastAPI/WebSocket gateway scaffold and Render configuration.
-- [ ] Deploy one Render Free Web Service with a maximum of one concurrent call initially.
-- [ ] Implement VAD and bounded utterance buffering rather than continuous audio-to-audio inference.
-- [ ] Use Cloudflare Workers AI `@cf/openai/whisper` for STT.
-- [ ] Use Cloudflare Workers AI `@cf/meta/llama-3.2-1b-instruct` for the text LLM.
-- [ ] Use Cloudflare Workers AI `@cf/myshell-ai/melotts` for TTS.
-- [ ] Stream sentence-level TTS output back as 8-kHz PCM and implement barge-in cancellation.
-
-### 4. Add retrieval and call-state reliability
-
-- [ ] Create and verify the Upstash Vector index with BGE-M3; enable hybrid/BM25 only after confirming free-tier support.
-- [ ] Store only short-lived call state, summaries, locks, generations, and rate limits in Upstash Redis.
-- [ ] Reconnect calls after gateway restarts when possible; otherwise route to the local fallback IVR.
-- [ ] Enforce the shared Workers AI daily quota and add provider-error fallback prompts.
-
-### 5. End-to-end validation
-
-- [ ] Test an inbound call from SIP signaling through STT, RAG, text LLM, TTS, and FreeSWITCH playback.
-- [ ] Measure first-response latency, turn latency, barge-in latency, CPU/memory, Render bandwidth, and AI quota usage.
-- [ ] Verify Render restart, WebSocket reconnect, expired HMAC nonce, provider timeout, and quota-exhaustion behavior.
-- [ ] Document the final test limits and known failure modes.
-
-The application infrastructure is intended to remain free within provider quotas. DID fees, SIP trunk charges, PSTN minutes, and possible network egress charges are outside the `$0` guarantee; a truly free test uses a SIP softphone or internal FreeSWITCH extension.
+- Render's public services are IPv4-oriented; Cloudflare now provides the IPv6-to-IPv4 media boundary for `voice.fxxii.com`.
+- The TLS-enabled `mod_audio_stream` module, IPv6 patch, 8-kHz mono L16 contract, and HMAC handshake are implemented. Live HMAC enforcement still requires deploying the pending gateway code to Render.
 
 ## License
 
