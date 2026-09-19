@@ -10,3 +10,7 @@ tools/
 # Local agent instructions
 AGENTS.md
 agents.md
+
+# Python generated files
+__pycache__/
+*.py[cod]

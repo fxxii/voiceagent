@@ -40,6 +40,38 @@ The application layer remains independently deployable and can handle:
 
 This keeps SIP/RTP operations isolated from application changes and avoids placing arbitrary UDP telephony traffic on an HTTP-only application platform.
 
+## Render voice gateway scaffold
+
+The repository now contains a deployable Python 3.12 gateway scaffold for the Render `voiceagent` project:
+
+```text
+FastAPI + Uvicorn
+    ├── GET  /health
+    ├── GET  /ready
+    ├── WS   /v1/audio/{call_id}
+    ├── POST /v1/admin/reindex
+    └── POST /v1/admin/documents
+```
+
+The WebSocket currently echoes binary frames and acknowledges text frames. This validates the transport path and is not yet production audio, RTP, STT, LLM, TTS, or RAG processing. Document and reindex state is process-local and intentionally non-persistent.
+
+Run locally:
+
+```bash
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
+PORT=8000 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Render uses:
+
+```text
+Build: pip install -r requirements.txt
+Start: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```
+
+The service is designed as a lightweight orchestration gateway for the Render Free instance. Local STT, LLM, embeddings, TTS, and Qdrant remain outside its resource budget and are planned as external integrations.
+
 ## Current deployment
 
 | Component | Configuration |
@@ -189,6 +221,7 @@ The detailed deployment plan and local operating notes are intentionally kept ou
 
 ### 3. Implement the free turn-based voice gateway
 
+- [x] Add the deployable FastAPI/WebSocket gateway scaffold and Render configuration.
 - [ ] Deploy one Render Free Web Service with a maximum of one concurrent call initially.
 - [ ] Implement VAD and bounded utterance buffering rather than continuous audio-to-audio inference.
 - [ ] Use Cloudflare Workers AI `@cf/openai/whisper` for STT.
