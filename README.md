@@ -148,7 +148,6 @@ Pending external integration:
 - IPv6 SIP/RTP firewall rules restricted to approved sources
 - External IPv6 softphone registration for extension `1000`
 - External two-way `9196` echo test
-- Configure `OPENROUTER_API_KEY` in the Render service
 - Verify a complete provider-backed call with FreeSWITCH playback
 - Add Upstash-backed retrieval and durable call state
 
