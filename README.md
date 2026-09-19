@@ -209,7 +209,7 @@ The detailed deployment plan and local operating notes are maintained separately
 - Render's public services are IPv4-oriented; Cloudflare now provides the IPv6-to-IPv4 media boundary for `voice.fxxii.com`.
 - The TLS-enabled `mod_audio_stream` module, IPv6 patch, 8-kHz mono L16 contract, and live HMAC handshake are implemented and verified from the IPv6-only VM.
 - OpenRouter transcription is request/response rather than a live STT WebSocket, so the first voice gateway implementation is turn-based. The LLM can stream text, and responses can be synthesized sentence-by-sentence.
-- OpenRouter `openai/whisper-large-v3-turbo` is usage-priced; `openai/gpt-oss-20b:free` is rate-limited. Edge TTS is a no-key online integration without a production SLA. Provider quotas, rate limits, and availability can change.
+- OpenRouter `openai/whisper-large-v3-turbo` is usage-priced; the configured `liquid/lfm-2.5-2.6b:free` route is rate-limited and its catalog availability can change. Edge TTS is a no-key online integration without a production SLA. Provider quotas, rate limits, and availability can change.
 - No FFmpeg dependency is planned. The gateway will use the FreeSWITCH module's native MP3 playback path unless testing proves another decoder is necessary.
 - The media start script sets `STREAM_PLAYBACK=true`; the FreeSWITCH VM must use the bidirectional `mod_audio_stream` build for returned `streamAudio` messages.
 

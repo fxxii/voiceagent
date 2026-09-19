@@ -19,7 +19,7 @@ class OpenRouterClient:
         api_key: str,
         *,
         stt_model: str = "openai/whisper-large-v3-turbo",
-        llm_model: str = "openai/gpt-oss-20b:free",
+        llm_model: str = "liquid/lfm-2.5-2.6b:free",
         base_url: str = "https://openrouter.ai/api/v1",
         timeout_seconds: float = 60.0,
         http_client: httpx.AsyncClient | None = None,
@@ -156,7 +156,7 @@ def configured_openrouter() -> OpenRouterClient:
     return OpenRouterClient(
         os.getenv("OPENROUTER_API_KEY", ""),
         stt_model=os.getenv("OPENROUTER_STT_MODEL", "openai/whisper-large-v3-turbo"),
-        llm_model=os.getenv("OPENROUTER_LLM_MODEL", "openai/gpt-oss-20b:free"),
+        llm_model=os.getenv("OPENROUTER_LLM_MODEL", "liquid/lfm-2.5-2.6b:free"),
         base_url=os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
         timeout_seconds=float(os.getenv("OPENROUTER_TIMEOUT_SECONDS", "60")),
     )
