@@ -1,0 +1,12 @@
+# Local secrets
+.env
+
+# Local planning and test tooling
+docs/
+test/
+tests/
+tools/
+
+# Local agent instructions
+AGENTS.md
+agents.md
