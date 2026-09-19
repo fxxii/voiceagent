@@ -205,7 +205,7 @@ The detailed deployment plan and local operating notes are maintained separately
 - The VM's 1 GiB RAM and 4 GiB swap are intended for FreeSWITCH, not local STT, LLM, embedding, or TTS workloads.
 - GCP Free Tier quotas apply; outbound media traffic is not unlimited.
 - Render's public services are IPv4-oriented; Cloudflare now provides the IPv6-to-IPv4 media boundary for `voice.fxxii.com`.
-- The TLS-enabled `mod_audio_stream` module, IPv6 patch, 8-kHz mono L16 contract, and HMAC handshake are implemented. Live HMAC enforcement still requires deploying the pending gateway code to Render.
+- The TLS-enabled `mod_audio_stream` module, IPv6 patch, 8-kHz mono L16 contract, and live HMAC handshake are implemented and verified from the IPv6-only VM.
 
 ## License
 
